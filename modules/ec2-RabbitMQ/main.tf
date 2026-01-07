@@ -118,6 +118,19 @@ resource "aws_instance" "rabbitmq" {
 
   user_data = <<-EOF
     #!/bin/bash
+    echo "Waiting for NAT Gateway connectivity..."
+    MAX_RETRIES=30
+    COUNT=0
+    while ! ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1; do
+        COUNT=$((COUNT+1))
+        if [ $COUNT -ge $MAX_RETRIES ]; then
+            echo "Timeout: Network not ready. Exiting."
+            exit 1
+        fi
+        echo "Attempt $COUNT: Network unreachable, sleeping 10s..."
+        sleep 10
+    done
+    echo "Network is up! Starting installation..."
     # 1. Network setup - Force IPv4 for stable downloads
     echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
     export DEBIAN_FRONTEND=noninteractive
@@ -157,7 +170,9 @@ resource "aws_instance" "rabbitmq" {
         /usr/sbin/rabbitmqctl start_app
     fi
   EOF
-
+  
+  depends_on = [var.nat_gateway_id]
+  
   tags = merge(var.common_tags, {
     Name = "rabbitmq-node-${count.index}"
   })

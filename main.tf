@@ -10,6 +10,7 @@ module "RabbitMQ-Cluster" {
     source = "./modules/ec2-RabbitMQ"
 
     vpc_id             = module.networking.vpc_id
+    nat_gateway_id     = module.networking.nat_gateway_id
     alb_sg_id          = module.RabbitMQ-Cluster.alb_sg_id
     private_subnet_ids = module.networking.private_subnets
     public_subnet_ids  = module.networking.public_subnets
